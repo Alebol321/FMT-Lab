@@ -10,5 +10,5 @@ We are fascinated by the functional diversity of microbes, and by trophic – nu
 
 Contacts: Professor Clarissa Schwab schwab@bce.au.dk 
 
-Latest publication: https://pure.au.dk/portal/en/persons/schwab%40bce.au.dk/publications/
+Latest publications: https://pure.au.dk/portal/en/persons/schwab%40bce.au.dk/publications/
 
