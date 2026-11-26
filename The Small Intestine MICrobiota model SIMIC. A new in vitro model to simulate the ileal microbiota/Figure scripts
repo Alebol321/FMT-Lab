@@ -1,0 +1,730 @@
+# Here we have the scripts for the figure per se
+## WARNING!! Check the input file names to be correct!
+
+
+groups = ["B. adolescentis","B. fragilis","E. faecalis","S. lutetiensis","S. salivarius","B. wadsworthia","V. parvula","R. hominis"]
+groups.reverse()
+###################################################
+# Figure 2
+##################################################
+#input file:
+#df_for_heatmap: df with single bacterial growth HPLC data. columns="Media", "Bacteria",and the different metabolites
+fig=plt.figure(figsize=(10, 10))
+gs = GridSpec(6,4,wspace=0.8,width_ratios=[1,2,2,3])
+    #sharey=True,
+    #gridspec_kw={"width_ratios": [1, 1.5]}
+#)
+ax_label=fig.add_subplot(gs[:,0])
+ax_heat0=fig.add_subplot(gs[:,1])
+ax_heat=fig.add_subplot(gs[:,2])
+ax_heat2=fig.add_subplot(gs[:,3])
+
+
+sns.heatmap(df_for_heatmap[["Glucose","Maltose"]],ax=ax_heat0,cmap="crest_r",cbar=True,annot=True,fmt='.1f')
+
+sns.heatmap(df_for_heatmap[["Acetate","Lactate"]],ax=ax_heat,cmap="flare",cbar=True,annot=True,fmt='.1f')
+sns.heatmap(df_for_heatmap[["Formate","Propionate","Succinate"]],ax=ax_heat2,cmap="flare",cbar=True,annot=True,fmt='.1f')
+heatmapticks=["SIMIC","PYG","PYM"]*8
+ax_heat.set_xlabel("SCCA (mM)", labelpad=17)
+#ax_heat2.set_xlabel("SCCA (mM)", labelpad=5)
+for ax in [ax_heat0,ax_heat,ax_heat2]:
+    ax.set_yticklabels(heatmapticks,rotation=0)
+ax_heat0.set_xticklabels(["Glucose","Maltose"],rotation=60,size=12)
+ax_heat.set_xticklabels(["Acetate","Lactate"],rotation=60,size=12)
+ax_heat2.set_xticklabels(["Formate","Propionate","Succinate"] ,rotation=60,size=12)
+
+for ax in [ax_heat0,ax_heat,ax_heat2]:
+    for i in range(0,24,3):
+        ax.axhline(y=i)
+
+cbar = ax_heat0.collections[0].colorbar
+cbar.ax.set_position([
+    0.40,   # x position
+    0.3,    # y position
+    0.015,   # width
+    0.5     # height
+    ])
+cbar = ax_heat.collections[0].colorbar
+cbar.ax.set_position([
+    0.615,   # x position
+    0.3,    # y position
+    0.015,   # width
+    0.5     # height
+    ])
+
+cbar = ax_heat2.collections[0].colorbar
+cbar.ax.set_position([
+    0.88,   # x position
+    0.3,    # y position
+    0.015,   # width
+    0.5     # height
+    ])
+
+ax_heat2.annotate(
+"Concentration (mM)",
+xy=(1.5, 0.6), xycoords='axes fraction',
+xytext=(0,4), textcoords='offset fontsize',
+fontsize='medium', verticalalignment='top',weight="bold",rotation=90)
+
+label=["A","B","C"] #for subplot annotation
+label_index=0
+for ax in [ax_heat0,ax_heat,ax_heat2]:
+     ax.annotate(
+     label[label_index],
+     xy=(-0.1, 1.02), xycoords='axes fraction',
+     xytext=(+0.5,+0.5), textcoords='offset fontsize',
+     fontsize=14, verticalalignment='top',weight="bold")
+     label_index+=1
+
+
+
+    
+# Configure shared tick-label axis
+ax_label.set_ylim(0, 24)
+ax_label.set_yticks([1.5,4.5,7.5,10.5,13.5,16.5,19.5,22.5])
+ax_label.set_yticklabels(groups,fontstyle='italic',size=12)  
+ax_label.tick_params(axis="y",which='major', pad=-75)
+ax_label.set_xticks([])
+for spine in ax_label.spines.values():
+    spine.set_visible(False) 
+
+plt.savefig("immagine_singlegrowth.png",dpi=600,bbox_inches='tight')
+plt.show()
+
+
+
+
+
+
+
+#######################
+Figure 3
+########################
+Input files: 
+HPLC_tube = df of the sSIMIC HPLC data
+tube_all_together = df with the sum of the different bacteria in the sSIMIC
+df_qpcr_tube_allTogether = df with the abundance of the different bacteria in the sSIMIC (expressed not in log form!)
+
+# needed for the geometric mean and geometric standard deviation
+summary=pd.DataFrame(columns=["Bacteria","Time","gmean","upper","lower"])
+for bacteria in df_qpcr_tube_allTogether["Bacteria"].unique():
+    for time in df_qpcr_tube_allTogether["Time"].unique():
+        #print(df_qpcr_tube_allTogether[(df_qpcr_tube_allTogether["Bacteria"]==bacteria)&(df_qpcr_tube_allTogether["Time"]==time)]["Copies"])
+        gmean=sp.gmean(df_qpcr_tube_allTogether[(df_qpcr_tube_allTogether["Bacteria"]==bacteria)&(df_qpcr_tube_allTogether["Time"]==time)]["Copies"])
+        gstd=sp.gstd(df_qpcr_tube_allTogether[(df_qpcr_tube_allTogether["Bacteria"]==bacteria)&(df_qpcr_tube_allTogether["Time"]==time)]["Copies"])
+        summary.loc[len(summary)]=[bacteria,time,gmean,gmean*gstd,gmean/gstd]    
+
+
+
+
+fig=plt.figure(figsize=(20,25))
+gs = GridSpec(5,2,hspace=0.4)
+ax1=fig.add_subplot(gs[0:2, 0])
+ax0=fig.add_subplot(gs[0:2, 1])
+ax4=fig.add_subplot(gs[2,1])
+ax5=fig.add_subplot(gs[4,0])
+ax4a=fig.add_subplot(gs[3,1])
+ax5a=fig.add_subplot(gs[4,1])
+ax4b=fig.add_subplot(gs[3,0])
+ax5b=fig.add_subplot(gs[2,0])
+
+plt.rcParams['text.usetex'] = False
+##new colormap
+base = [
+    "#0072B2",  # blue
+    "#E69F00",  # orange
+    "#CC79A7",  # magenta
+]
+
+palette = [ #let´s separate the colors based on trophic level
+    sns.set_hls_values(base[0], l=0.35, s=0.9),
+    sns.set_hls_values(base[0], l=0.70, s=0.6),
+    sns.set_hls_values(base[1], l=0.30, s=0.9),
+    sns.set_hls_values(base[1], l=0.50, s=0.8),
+    sns.set_hls_values(base[1], l=0.75, s=0.5),
+    sns.set_hls_values(base[2], l=0.30, s=0.9),
+    sns.set_hls_values(base[2], l=0.50, s=0.8),
+    sns.set_hls_values(base[2], l=0.75, s=0.5),
+]
+
+variables = ["B.adolescentis","B.fragilis","E.faecalis","S.lutetiensis","S.salivarius",
+               "B.wadsworthia","V.parvula","R.hominis"]
+
+
+offsets = np.linspace(-1,1, len(variables))
+index=0
+for var, offset in zip(variables, offsets):
+    print(var, offset)
+    subset = summary[summary["Bacteria"] == var]
+    subset=subset.sort_values(by=["Time"], ascending=[True]) # for some reason it wasn´t ordered before
+    ax0.errorbar(
+        subset["Time"] + offset,
+        subset["gmean"],
+        yerr=[subset["gmean"]-subset["lower"],subset["upper"]-subset["gmean"]],
+        marker="o", linestyle="--",
+        color=palette[index],label=var,alpha=0.5
+    )
+    index+=1
+#palette=sns.color_palette("viridis",8)#before it was df_qpcr_lasse_nov
+#sns.boxplot(data=df_qpcr_tube_allTogether, x="Time",y="Copies", hue="Bacteria",hue_order=["B.adolescentis","B.fragilis","E.faecalis","S.lutetiensis","S.salivarius","B.wadsworthia","V.parvula","R.hominis"],palette=palette,ax=ax0,native_scale=True)
+
+#sns.lineplot(data=df_qpcr_tube_allTogether, x="Time",y="Copies",estimator=np.median, errorbar ='iqr', hue="Bacteria",hue_order=["B.adolescentis","B.fragilis","E.faecalis","S.lutetiensis","S.salivarius","B.wadsworthia","V.parvula","R.hominis"],marker="o",linestyle="--", linewidth=1.5,palette=palette,ax=ax0,err_style='bars')
+sns.stripplot(data=tube_all_together[tube_all_together["Sum"]>1000], x="Time",y="Sum",ax=ax1,native_scale=True,alpha=0.6,color="black")
+sns.boxplot(data=tube_all_together[tube_all_together["Sum"]>1000], x="Time",y="Sum",ax=ax1,native_scale=True,showfliers=False)
+sns.lineplot(data=HPLC_tube[HPLC_tube["Metabolite"]=="Acetate"],x="Time",y="Quantity",errorbar="sd",linestyle="--",ax=ax4,marker="o")
+sns.lineplot(data=HPLC_tube[HPLC_tube["Metabolite"]=="Formate"],x="Time",y="Quantity",errorbar="sd",linestyle="--",ax=ax4a,marker="o")
+sns.lineplot(data=HPLC_tube[HPLC_tube["Metabolite"]=="Propionate"],x="Time",y="Quantity",errorbar="sd",linestyle="--",ax=ax5,marker="o")
+sns.lineplot(data=HPLC_tube[HPLC_tube["Metabolite"]=="Lactate"],x="Time",y="Quantity",errorbar="sd",linestyle="--",ax=ax4b,marker="o")
+sns.lineplot(data=HPLC_tube[HPLC_tube["Metabolite"]=="Succinate"],x="Time",y="Quantity",errorbar="sd",linestyle="--",ax=ax5a,marker="o")
+sns.lineplot(data=HPLC_tube_sum,x="Time",y="Quantity",errorbar="sd",linestyle="--",ax=ax5b,marker="o")
+list_titles=["Acetate","Formate","Lactate","Propionate","Succinate","Total SCCA"]
+#i=0
+#for ax in [ax4,ax4a,ax5,ax4b,ax5a,ax5b]:
+#    ax.set_title(list_titles[i],pad=-10,size=12)
+#    i+=1
+
+
+#for some reason the boxplot causes a lot of problems, so it is not gonna be in the for loop
+ax0.set_yticks([1,10,10**2,10**3,10**4,10**5,10**6,10**7,10**8,10**9])
+ax0.set_yscale("log")
+
+ax0.legend(
+        ncol=4, 
+        loc='upper right', 
+        frameon=True, 
+        edgecolor='black', 
+        columnspacing=1.5,prop={"size":12,"style":"italic"})
+a#x0.set_yticks([10**2,10**3,10**4,10**5,10**6,10**7,10**8,10**9])
+ax1.set_yscale("log")
+ax1.set_yticks([10**6,10**7,10**8,10**9])
+ax0.set_yticks([0,1,10**2,10**3,10**4,10**5,10**6,10**7,10**8,10**9,10**10])
+ax1.set_xlabel("Time (h)",size=16)
+ax1.set_ylabel("Bacterial total abundance(copies/mL)",size=16)
+
+
+ax0.set_ylabel("Bacterial abundance (copies/mL)",size=16)
+label=["B","A","D","F","E","G","H","C"] #for subplot annotation
+label_index=0
+for ax in [ax0,ax1,ax4,ax4a,ax4b,ax5,ax5a,ax5b]:
+    ax.set_xlabel("Time (h)",size=16)
+    ax.set_xticks([0,24,32,48,56,72,80,96])
+    ## subplot annotation
+    ax.annotate(
+    label[label_index],
+    xy=(0, 1), xycoords='axes fraction',
+    xytext=(+0.5, -0.5), textcoords='offset fontsize',
+    fontsize=16, verticalalignment='top',weight="bold")
+    label_index+=1
+counter=0
+for ax in [ax4,ax4a,ax4b,ax5,ax5a,ax5b]:
+    
+   # ax.set_title(f"{list_titles[counter]}",size=16,y=0.85)
+#    ax.grid()
+    ax.set_ylabel(f"{list_titles[counter]}\n Concentration (mM)",size=16)
+    counter+=1
+for ax in [ax0,ax1,ax4a,ax4b,ax4,ax5,ax5a,ax5b]:
+    ax.tick_params(axis='both', which='major',bottom=True, labelsize=14)
+ax5.set_ylim(-1,20)
+ax5a.set_ylim(-1,20)
+ax4.sharey(ax5)
+#ax1.sharey(ax0)
+ax4a.sharey(ax5a)
+ax0.set_ylim(10,10**11)
+#ax4b.sharey(ax5b)
+#ax4b.sharey(ax5a)
+plt.savefig("sSIMIC.png",dpi=600,bbox_inches='tight')
+plt.show()
+
+
+
+#################################
+#Figure 4
+#################################
+#Input files: 
+#rel bioreactor: df with sum of the bacterial abundances in cSIMIC experiments(expressed not in log form)
+#summary_bf: df with the different bacterial abundances of the cSIMIC experiments (expressed not in log form)
+# HPLC_ fragilis: df with the HPLC data of the cSIMIC experiments
+# all the files with the notation "øfragilis" contain the same information as the ones described above, but for the cSIMIC-BF condition
+        
+
+condition=["cSIMIC","cSIMIC BF"] #needed later for labels
+rel_bioreactor=pd.DataFrame(columns=["Time","Total"])
+rel_bioreactor_øfragilis=pd.DataFrame(columns=["Time","Total"])
+for df in [df_qpcr_sep,df_qpcr_feb,df_qpcr_january_2026]:
+    for index in df["Time"].unique():
+        sum=[0,0,0,0,0,0,0,0]
+        for bacteria in df["Bacteria"].unique():
+            for item in range(len(df[(df["Bacteria"]==bacteria)&(df["Time"]==index)].index)):
+                sum[item]+=10**(df[(df["Bacteria"]==bacteria)&(df["Time"]==index)].iloc[item]["Copies"])
+        for n in range(len(sum)):
+            if sum[n]!=0:
+                rel_bioreactor.loc[len(rel_bioreactor)]=[index,sum[n]]
+                
+for df in [df_qpcr_mar,df_qpcr_june,df_qpcr_dec]:
+    for index in df["Time"].unique():
+        replicates=[0,0,0,0,0,0,0]
+        for bacteria in df["Bacteria"].unique():
+            #print(index,bacteria)
+            #print(df[(df["Bacteria"]==bacteria)&(df["Time"]==index)])
+            for item in range(len(df[(df["Bacteria"]==bacteria)&(df["Time"]==index)].index)):
+                replicates[item]+=10**(df[(df["Bacteria"]==bacteria)&(df["Time"]==index)].iloc[item]["Copies"])
+        for n in range(len(replicates)):
+            if replicates[n]!=0:
+                rel_bioreactor_øfragilis.loc[len(rel_bioreactor_øfragilis)]=[index,replicates[n]]
+rel_bioreactor=rel_bioreactor[rel_bioreactor["Time"]!=0]
+#calculating geometric mean and geomtric standard deviation to plot
+summary_bf=pd.DataFrame(columns=["Bacteria","Time","gmean","upper","lower"])
+for bacteria in df_cSIMIC_tot2["Bacteria"].unique():
+    #print(bacteria)
+    for time in df_cSIMIC_tot2["Time"].unique():
+      #  print(time)
+        #print(df_qpcr_tube_allTogether[(df_qpcr_tube_allTogether["Bacteria"]==bacteria)&(df_qpcr_tube_allTogether["Time"]==time)]["Copies"])
+        gmean=sp.gmean(df_cSIMIC_tot2[(df_cSIMIC_tot2["Bacteria"]==bacteria)&(df_cSIMIC_tot2["Time"]==time)]["Copies"])
+        gstd=sp.gstd(df_cSIMIC_tot2[(df_cSIMIC_tot2["Bacteria"]==bacteria)&(df_cSIMIC_tot2["Time"]==time)]["Copies"])
+        summary_bf.loc[len(summary_bf)]=[bacteria,time,gmean,gmean*gstd,gmean/gstd]   
+
+summary_øbf=pd.DataFrame(columns=["Bacteria","Time","gmean","upper","lower"])
+for bacteria in df_cSIMICøbf_tot2["Bacteria"].unique():
+    print(bacteria)
+    for time in df_cSIMICøbf_tot2["Time"].unique():
+    #    print(time)
+        #print(df_qpcr_tube_allTogether[(df_qpcr_tube_allTogether["Bacteria"]==bacteria)&(df_qpcr_tube_allTogether["Time"]==time)]["Copies"])
+        gmean=sp.gmean(df_cSIMICøbf_tot2[(df_cSIMICøbf_tot2["Bacteria"]==bacteria)&(df_cSIMICøbf_tot2["Time"]==time)]["Copies"])
+        gstd=sp.gstd(df_cSIMICøbf_tot2[(df_cSIMICøbf_tot2["Bacteria"]==bacteria)&(df_cSIMICøbf_tot2["Time"]==time)]["Copies"])
+        summary_øbf.loc[len(summary_øbf)]=[bacteria,time,gmean,gmean*gstd,gmean/gstd]
+
+#offset for values so they don´t overlap in the figures
+offsets = np.linspace(-1,1, len(variables))
+fig=plt.figure(figsize=(20,28))
+gs = GridSpec(7,2,hspace=0.4)
+ax0=fig.add_subplot(gs[1:3, 0])
+ax1=fig.add_subplot(gs[4:6, 0])
+ax2=fig.add_subplot(gs[0, 0])
+ax3=fig.add_subplot(gs[3, 0])
+ax4=fig.add_subplot(gs[1,1])
+ax5=fig.add_subplot(gs[2,1])
+ax4a=fig.add_subplot(gs[4,1])
+ax5a=fig.add_subplot(gs[5,1])
+ax4b=fig.add_subplot(gs[3,1])
+ax5b=fig.add_subplot(gs[0,1])
+plt.rcParams['text.usetex'] = False
+##new colormap
+base = [
+    "#0072B2",  # blue
+    "#E69F00",  # orange
+    "#CC79A7",  # magenta
+]
+palette = [
+    sns.set_hls_values(base[0], l=0.35, s=0.9),
+    sns.set_hls_values(base[0], l=0.70, s=0.6),
+
+    sns.set_hls_values(base[1], l=0.30, s=0.9),
+    sns.set_hls_values(base[1], l=0.50, s=0.8),
+    sns.set_hls_values(base[1], l=0.75, s=0.5),
+
+    sns.set_hls_values(base[2], l=0.30, s=0.9),
+    sns.set_hls_values(base[2], l=0.50, s=0.8),
+    sns.set_hls_values(base[2], l=0.75, s=0.5),
+]
+#palette=sns.color_palette("bright")[0:8]
+#sns.lineplot(data=summary_bf, x="Time",y="gmean", errorbar=None, hue="Bacteria",hue_order=variables,linestyle=None, linewidth=1.5,palette=palette,ax=ax0)
+#sns.lineplot(data=summary_øbf[summary_øbf["Time"]>0],x="Time",y="gmean",errorbar=None,hue="Bacteria",hue_order=variables,linestyle=None, linewidth=1.5,palette=palette,ax=ax1)
+index=0
+for var, offset in zip(variables, offsets):
+    #print(var, offset)
+    subset_bf = summary_bf[summary_bf["Bacteria"] == var]
+    subset_øbf=summary_øbf[(summary_øbf["Bacteria"] == var)&(summary_øbf["Time"]>0)]
+    subset_bf=subset_bf.sort_values(by=["Time"], ascending=[True]) # for some reason it wasn´t ordered before
+
+    ax0.errorbar(
+        subset_bf["Time"] + offset,
+        subset_bf["gmean"],
+        yerr=[subset_bf["gmean"]-subset_bf["lower"],subset_bf["upper"]-subset_bf["gmean"]],
+        marker="o", linestyle="--",
+        color=palette[index],label=var,alpha=0.5
+    )
+    ax1.errorbar(
+        subset_øbf["Time"] + offset,
+        subset_øbf["gmean"],
+        yerr=[subset_øbf["gmean"]-subset_øbf["lower"],subset_øbf["upper"]-subset_øbf["gmean"]],
+        marker="o",linestyle="--",
+        color=palette[index],
+        label=var,alpha=0.5
+    )
+    index+=1
+legend,labels=ax1.get_legend_handles_labels()
+handout=[]
+lablout=[]
+for h,l in zip(legend,labels):
+    if l not in ["B.fragilis"]:
+        lablout.append(l)
+        handout.append(h)
+ax1.legend(handout,lablout,ncol=4, 
+        loc='upper right', 
+        frameon=True, 
+        edgecolor='black', 
+        columnspacing=1.5,prop={"size":12,"style":"italic"})
+
+
+
+sns.stripplot(data=rel_bioreactor[(rel_bioreactor["Time"]!=50)&(rel_bioreactor["Time"]!=92)], x="Time",y="Total",ax=ax2,native_scale=True,color="black")
+sns.stripplot(data=rel_bioreactor_øfragilis[rel_bioreactor_øfragilis["Time"]!=0],x="Time",y="Total",ax=ax3,native_scale=True,color="black")
+sns.lineplot(data=rel_bioreactor[(rel_bioreactor["Time"]!=50)&(rel_bioreactor["Time"]!=92)], x="Time",y="Total",ax=ax2,linestyle="--",errorbar=None)
+sns.lineplot(data=rel_bioreactor_øfragilis[rel_bioreactor_øfragilis["Time"]!=0],x="Time",y="Total",ax=ax3,linestyle="--",errorbar=None,color="orange")
+
+sns.lineplot(data=HPLC_fragilis[(HPLC_fragilis["Metabolite"]=="Acetate")&(HPLC_fragilis["Time"]!=51)],x="Time",y="Quantity",errorbar="sd",ax=ax4,label='Line 1',linestyle="--",marker="o")
+sns.lineplot(data=HPLC_øfragilis[HPLC_øfragilis["Metabolite"]=="Acetate"],x="Time",y="Quantity",errorbar="sd",ax=ax4,label='Line 2',linestyle="--",marker="o")
+
+sns.lineplot(data=HPLC_fragilis[(HPLC_fragilis["Metabolite"]=="Formate")&(HPLC_fragilis["Time"]!=51)],x="Time",y="Quantity",errorbar="sd",ax=ax4a,label="bbb",linestyle="--",marker="o")
+sns.lineplot(data=HPLC_øfragilis[HPLC_øfragilis["Metabolite"]=="Formate"],x="Time",y="Quantity",errorbar="sd",ax=ax4a,label="a",linestyle="--",marker="o")
+
+sns.lineplot(data=HPLC_fragilis[(HPLC_fragilis["Metabolite"]=="Propionate")&(HPLC_fragilis["Time"]!=51)],x="Time",y="Quantity",errorbar="sd",ax=ax4b,label="bbb",linestyle="--",marker="o")
+sns.lineplot(data=HPLC_øfragilis[HPLC_øfragilis["Metabolite"]=="Propionate"],x="Time",y="Quantity",errorbar="sd",ax=ax4b,label="a",linestyle="--",marker="o")
+
+sns.lineplot(data=HPLC_fragilis[(HPLC_fragilis["Metabolite"]=="Lactate")&(HPLC_fragilis["Time"]!=51)],x="Time",y="Quantity",errorbar="sd",ax=ax5,label="a",linestyle="--",marker="o")
+sns.lineplot(data=HPLC_øfragilis[HPLC_øfragilis["Metabolite"]=="Lactate"],x="Time",y="Quantity",errorbar="sd",ax=ax5,label="label",linestyle="--",marker="o")
+
+sns.lineplot(data=HPLC_fragilis[(HPLC_fragilis["Metabolite"]=="Succinate")&(HPLC_fragilis["Time"]!=51)],x="Time",y="Quantity",errorbar="sd",ax=ax5a,label="bbb",linestyle="--",marker="o")
+sns.lineplot(data=HPLC_øfragilis[HPLC_øfragilis["Metabolite"]=="Succinate"],x="Time",y="Quantity",errorbar="sd",ax=ax5a,label="aaa",linestyle="--",marker="o")
+
+sns.lineplot(data=HPLC_fragilis_sum[HPLC_fragilis_sum["Time"]!=51],x="Time",y="Quantity",errorbar="sd",ax=ax5b,label="aaa",linestyle="--",marker="o")
+sns.lineplot(data=HPLC_øfragilis_sum,x="Time",y="Quantity",errorbar="sd",ax=ax5b,label="aedfq",linestyle="--",marker="o")
+
+list_titles=["Formate","Propionate","Acetate","Lactate","Succinate","Total SCCA"]
+
+
+#HPLC_sep[1:][["Acetate","Propionate","Formate","Succinate","Lactate"]].plot(kind='bar', stacked=True, color=palette[0:7],ax=axes[2,0])
+#HPLC_alba1.loc[:72,:][["Acetate","Propionate","Formate","Succinate","Lactate"]].plot(kind='bar', stacked=True, color=palette[0:7],ax=axes[2,1])
+#HPLC_mar[1:][["Acetate","Propionate","Formate","Succinate","Lactate"]].plot(kind="bar",stacked=True,color=palette[0:7],ax=axes[2,2])
+#sns.boxplot(data=HPLC_bioreactors, x="Time",y="Total",ax=axes[3,0])
+#sns.boxplot(data=HPLC_tubes[(HPLC_tubes["Time"]<=72)], x="Time",y="Total",ax=axes[3,1])
+
+
+
+ax0.legend(
+    ncol=4, 
+    loc='upper right', 
+    frameon=True, 
+    edgecolor='black', 
+    columnspacing=1.5,prop={"size":12,"style":"italic"})
+i=0
+for ax in [ax0,ax1]:
+    ax.set_ylabel(f"{condition[i]}\nBacterial abundance (copies/mL)",size=16)
+    i+=1
+i=0
+for ax in [ax4a,ax4b,ax4,ax5,ax5a,ax5b]:
+    handles, labels = ax.get_legend_handles_labels()
+    ax.legend(handles=handles,labels=["cSIMIC","cSIMIC BF"],loc="upper right")
+    ax.set_ylabel(f"{list_titles[i]}\nConcentration (mM)",size=16)
+    i+=1
+
+
+#axes[0,0].axhline(y=2.95)
+#axes[0,1].axhline(y=2.95)
+##log scale for the sum plot
+
+
+#ax0.set_title("cSIMIC",size=20)
+#axes[0,1].set_title("sSIMIC",size=20)
+#ax1.set_title("cSIMIC øBf",size=20)
+for ax in [ax0,ax1,ax2,ax3]:
+    ax.set_yscale("log")
+
+    #axes[3,i].sharex(axes[2,i])
+for ax in [ax0,ax1]:
+    ax.set_yticks([0,1,10**2,10**3,10**4,10**5,10**6,10**7,10**8,10**9,10**10])
+i=0
+for ax in [ax2,ax3]:
+    ax.set_ylabel(f"{condition[i]}\nTotal abundance (copies/mL)",size=16)
+    ax.set_yticks([10**6,10**7,10**8,10**9,10**10])
+    #axes[2,i].set_ylabel("Concentration (mM)",size=18)   
+   # ax.sharey(axes[i,0])
+    i+=1
+for ax in [ax4,ax5,ax4a,ax5a,ax4b,ax5b]:
+    
+    #ax.grid(axis="y")
+    ticks=ax.set_xticks([0,3,6,10,14,24,30,34,38,48,54,58,62,72,78,82,86,96,102])
+    ax.tick_params(axis="x",labelrotation=45)
+    for ticks_red in [ticks[3],ticks[5],ticks[7],ticks[9],ticks[11],ticks[13],ticks[15],ticks[17]]:
+        ticks_red.label1.set_color("red")
+        #ticks_red.tick1line.set_markeredgecolor("red")
+        #ticks_red.gridline.set(visible=True, linestyle=':', linewidth=1.5, color='red')
+
+    #for the axes with the boxplots and the total bacteria plots
+for ax in [ax0,ax1]:
+    ax.set_xticks([3,6,10,14,24,30,34,38,48,54,58,62,72,78,82,86,96,102])
+for ax in [ax0,ax1,ax2,ax3]:
+    ax.set_xticklabels([0,6,10,14,24,30,34,38,48,54,58,62,72,78,82,86,96,102])
+    ax.tick_params(axis="x",labelrotation=45)
+label=["B","J","A","I","D","G","F","E","H","C"] #for subplot annotation
+label_index=0
+for ax in [ax0,ax1,ax2,ax3,ax4,ax4a,ax4b,ax5,ax5a,ax5b]:
+    ax.set_xlabel("Time (h)",size=16)
+    #subplot annotation
+    ax.annotate(
+    label[label_index],
+    xy=(0, 1), xycoords='axes fraction',
+    xytext=(+0.5, -0.5), textcoords='offset fontsize',
+    fontsize=16, verticalalignment='top',weight="bold")
+    label_index+=1
+
+#ax2.set_title("cSIMIC",size=16,y=0.85)
+#ax3.set_title("cSIMIC-BF",size=16,y=0.85)
+ax5a.set_ylim(-2,15)
+ax5.sharey(ax4)
+#ax0.sharey(ax1)
+ax2.sharey(ax3)
+ax4a.sharey(ax5a)
+ax4b.sharey(ax5a)
+ax2.sharex(ax0)
+ax3.sharex(ax0)
+for ax in [ax0,ax1,ax2,ax3,ax4a,ax4b,ax4,ax5,ax5a,ax5b]:
+    ax.tick_params(axis='both', which='major', labelsize=14,bottom=True)
+#ax5b.set_ylim(0,50)
+#axes[0,1].set_xticks([24,32,48,56,72])
+#axes[2,0].legend(loc="upper right",fontsize=11)
+#axes[2,1].legend(fontsize=11)
+#plt.rcParams['text.usetex'] = True #block text from changing font type when going italics
+ax0.set_ylim(1/10,10**11)
+ax1.set_ylim(1/10,10**11)
+
+plt.savefig("figure4.png",dpi=600,bbox_inches='tight')
+plt.show()
+
+##############################
+Figure 6
+###############################
+#input files
+#real_time_series_with: list of lists,Canberra distances from ref of the cSIMIC experiments(contains the three replicates as lists)
+#real_time_series_withø: list of lists,Canberra distances from ref of the cSIMIC-BF experiments(contains the three replicates as lists)
+# real_time_series_with_cos: list of lists,cosine distances from ref of the cSIMIC experiments(contains the three replicates as lists)
+#real_time_series_withø_cos: list of lists,cosine distances from ref of the cSIMIC-BF experiments(contains the three replicates as lists)
+# real_tot_canberra_cosine: df with the canberra and cosine distances marked based on phase and condition
+
+
+fig, axes = plt.subplots(3, 2,figsize=(15,15))
+palette=sns.color_palette("Greys")
+
+
+x = [30,34,38,48,54,58,62,72,78,82,86,96,102]
+
+axes[0,0].plot(x[:8],real_time_series_with[0],label="rep1",linestyle="--",marker="^",color=palette[2])
+axes[0,0].plot(x,real_time_series_with[1] , label='rep2',linestyle="--",marker="^",color=palette[3])
+axes[0,0].plot(x,real_time_series_with[2] , label='rep3',linestyle="--",marker="^",color=palette[5])
+
+axes[0,1].plot(x[:8],real_time_series_withø[2][:8] , label='rep1',linestyle="--",marker="^",color=palette[2])
+axes[0,1].plot(x,real_time_series_withø[1] , label='rep2',linestyle="--",marker="^",color=palette[3])
+axes[0,1].plot(x,real_time_series_withø[0] , label='rep3',linestyle="--",marker="^",color=palette[5])
+
+# Plotting multiple lines
+axes[1,0].plot(x[:8],real_time_series_with_cos[0] , label='rep1',linestyle="--",marker="o",color=palette[2])
+axes[1,0].plot(x,real_time_series_with_cos[1] , label='rep2',linestyle="--",marker="o",color=palette[3])
+axes[1,0].plot(x,real_time_series_with_cos[2] , label='rep3',linestyle="--",marker="o",color=palette[5])
+axes[1,1].plot(x[:8],real_time_series_withø_cos[2] , label='rep1',linestyle="--",marker="o",color=palette[2])
+axes[1,1].plot(x,real_time_series_withø_cos[1] , label='rep2',linestyle="--",marker="o",color=palette[3])
+axes[1,1].plot(x,real_time_series_withø_cos[0] , label='rep3',linestyle="--",marker="o",color=palette[5])
+
+#axes[0,0].set_title("cSIMIC",fontsize=15)
+#axes[0,1].set_title("cSIMIC øBf",fontsize=15)
+#axes[0,0].set_title("cSIMIC", size=15,y=0.9)
+#axes[0,1].set_title("cSIMIC-BF", size=15,y=0.9)
+condition=["cSIMIC","cSIMIC-BF"]
+for n in range(2):
+    axes[0,n].set_ylabel(f"{condition[n]}\nCanberra distance",size=15)
+    axes[1,n].set_ylabel(f'{condition[n]}\nCosine distance',size=15)
+    
+    for j in range (2):
+        axes[n,j].set_xlabel('Time (h)',size=15)
+        axes[n,j].legend()
+        axes[n,j].set_ylim(0,1)
+        axes[n,j].set_xticks([30,34,38,48,54,58,62,72,78,82,86,96,102],[30,34,38,48,54,58,62,72,78,82,86,96,102])
+        axes[n,j].tick_params(axis='both', which='major', labelsize=14,bottom=True)
+        ticks = axes[n, j].set_xticks([30, 34, 38, 48, 54, 58, 62, 72, 78, 82, 86, 96, 102])
+        #colors = ["red", "gray", "orange", "black"]
+        #for i, tick in enumerate(ticks[1:]):
+         #   tick.label1.set_color(colors[i % 4])
+        #ticks[0].label1.set_color("black")
+        axes[n,j].axvline(x=48,linestyle="--",alpha=0.3,color="black")
+        axes[n,j].axvline(x=72,linestyle="--",alpha=0.3,color="black")
+        axes[n,j].axvline(x=96,linestyle="--",alpha=0.3,color="black")
+#cr = colorizer.Colorizer(norm=norm, cmap=cmap)
+#fig.colorbar(mappable,ax=axes[0,0])
+colors = ["#d55e00ff", "#6c8ebfff", "#e69f00ff", "#9fbad6ff"]
+# Inset spans the graph's width and sits just above it
+for m in range(2):
+    for j in range(2):
+        bar_ax = axes[m,j].inset_axes([0.043, -0.03, 0.9125, 0.03])
+        bar_ax.set_xlim(x[0], x[-1])
+        bar_ax.set_ylim(0, 1)
+        # Repeat the four-color sequence for each tick position
+        for i, color in enumerate(colors[i % len(colors)] for i in range(len(x)-1)):
+            bar_ax.barh(0.5, x[i + 1] - x[i],
+                        left=x[i], height=1, color=color)
+        
+        bar_ax.set_axis_off()
+
+
+
+
+
+label=["A","B","C","D","E","F"] #for subplot annotation
+label_index=0
+for i in range(3):
+    for j in range(2):
+    ## subplot annotation
+        axes[i,j].annotate(
+        label[label_index],
+        xy=(0, 1), xycoords='axes fraction',
+        xytext=(+0.5, -0.5), textcoords='offset fontsize',
+        fontsize=14, verticalalignment='top',weight="bold")
+        label_index+=1
+
+
+sns.boxplot(data=real_tot_canberra_cosine,x="Distance_matrix",y="Distance",ax=axes[2,0],showfliers=False)
+sns.stripplot(data=real_tot_canberra_cosine,x="Distance_matrix",y="Distance",ax=axes[2,0],alpha=0.5,color="black")
+g=sns.barplot(data=real_tot_canberra_cosine,x="Phase",y="Distance",hue="Distance_matrix",ax=axes[2,1])
+#sns.boxplot(data=real_tot_canberra_cosine,x="distance_fragilis",y="Distance",ax=axes[2])
+for l in range(2):
+    axes[2,l].set_ylim(0,1)
+    axes[2,l].set_ylabel("Distance",size=15)   
+#sns.swarmplot(data=singlephase_berraandeucli,x= 'phase', y='value',hue="distance_matrix",ax=axes[1],dodge=True)
+axes[2,0].tick_params(axis="x",labelrotation=45)
+axes[2,0].set_xlabel("")
+axes[2,1].set_xlabel("Phase",size=14)
+
+handles, labels = axes[2,1].get_legend_handles_labels()
+axes[2,1].legend(handles=handles,labels=["Canberra cSIMIC","Cosine cSIMIC","Canberra cSIMIC-BF","Cosine cSIMIC-BF"]) 
+ticks=axes[2,0].get_xticks()
+axes[2,0].set_xticks(ticks=ticks,labels=["Canberra cSIMIC","Cosine cSIMIC","Canberra cSIMIC-BF","Cosine cSIMIC-BF"])
+   
+plt.savefig("canberra_cosinedistance.png",dpi=300,bbox_inches='tight')
+
+
+
+
+
+########################################################
+#Supplementary figure 1
+###########################################################
+#Input files:
+#summary_bf: df with the abundance of the bacteria in the cSIMIC experiment (not in log form)
+#summary_øbf: df with the abundance of the bacteria in the cSIMIC-BF experiment (not in log form)
+#summary_bf_forsupp: df with the total abundance of the bacteria in the cSIMIC experiment, excluding B.fragilis (not in log form)
+#summary_øbf_forsupp: df with the total abundance of the bacteria in the cSIMIC-BF experiment (not in log form)
+
+variables = ["B.adolescentis","B.fragilis","E.faecalis","S.lutetiensis","S.salivarius",
+               "B.wadsworthia","V.parvula","R.hominis"]
+label=["A","B","C","D","E","F","G"] #for subplot annotation
+offsets = np.linspace(-1,1, len(variables))
+fig=plt.figure(figsize=(20,30))
+gs = GridSpec(4,2,hspace=0.4)
+ax0=fig.add_subplot(gs[0, 0])
+ax1=fig.add_subplot(gs[1, 0])
+ax3=fig.add_subplot(gs[2, 0])
+ax2=fig.add_subplot(gs[0, 1])
+ax4=fig.add_subplot(gs[1,1])
+ax5=fig.add_subplot(gs[2,1])
+ax6=fig.add_subplot(gs[3,:])
+plt.rcParams['text.usetex'] = False
+ax=[ax0,ax2,ax1,ax4,ax3,ax5]
+index=0
+for var, offset in zip(variables, offsets):
+    print(var)
+    if var not in ["B.fragilis","R.hominis"]:
+        #print(var, offset)
+        subset_bf = summary_bf[summary_bf["Bacteria"] == var]
+        subset_øbf=summary_øbf[(summary_øbf["Bacteria"] == var)&(summary_øbf["Time"]>0)]
+        subset_bf=subset_bf.sort_values(by=["Time"], ascending=[True]) # for some reason it wasn´t ordered before
+        ax[index].errorbar(
+            subset_bf["Time"] + offset,
+            subset_bf["gmean"],
+            yerr=[subset_bf["gmean"]-subset_bf["lower"],subset_bf["upper"]-subset_bf["gmean"]],
+            marker="o", linestyle="--",
+            label=var,alpha=0.5)
+        ax[index].errorbar(
+            subset_øbf["Time"] + offset,
+            subset_øbf["gmean"],
+            yerr=[subset_øbf["gmean"]-subset_øbf["lower"],subset_øbf["upper"]-subset_øbf["gmean"]],
+            marker="o",linestyle="--",
+            label=var,alpha=0.5
+        )   
+        index+=1
+index=0
+for ax in [ax0,ax2,ax1,ax4,ax3,ax5]:
+   
+        ax.set_yscale("log")
+        ax.set_xticks([0,6,10,14,24,30,34,38,48,54,58,62,72,78,82,86,96,102])
+        legend,labels=ax.get_legend_handles_labels()
+        ax.legend(legend,["cSIMIC","cSIMIC-BF"],
+        frameon=True, 
+        edgecolor='black',loc="lower left",
+        columnspacing=1.5,prop={"size":10})
+        ax.set_title(labels[0],size=16,style="italic")
+        ax.set_ylabel("Bacterial abundance (copies/mL)",size=14)
+        ax.set_xlabel("Time (h)", size=14)
+        ax.annotate(
+        label[index], xy=(0, 1), xycoords='axes fraction',xytext=(+0.5, -0.5), textcoords='offset fontsize',
+        fontsize=16, verticalalignment='top',weight="bold")
+        index+=1
+        
+
+    # last graph
+summary_bf_forsupp=summary_bf_forsupp.sort_values(by=["Time"], ascending=[True]) # for some reason it wasn´t ordered before
+ax6.errorbar(summary_bf_forsupp["Time"] + offset,
+            summary_bf_forsupp["gmean"],
+            yerr=[summary_bf_forsupp["gmean"]-summary_bf_forsupp["lower"],summary_bf_forsupp["upper"]-summary_bf_forsupp["gmean"]],
+            marker="o", linestyle="--",
+            label=var,alpha=0.5
+        )
+ax6.errorbar(
+            summary_øbf_forsupp["Time"] + offset,
+            summary_øbf_forsupp["gmean"],
+            yerr=[summary_øbf_forsupp["gmean"]-summary_øbf_forsupp["lower"],summary_øbf_forsupp["upper"]-summary_øbf_forsupp["gmean"]],
+            marker="o",linestyle="--",
+    
+            label=var,alpha=0.5
+        )
+ax6.set_yscale("log")
+ax6.set_xticks([0,6,10,14,24,30,34,38,48,54,58,62,72,78,82,86,96,102])
+legend,labels=ax6.get_legend_handles_labels()
+ax6.legend(legend,["cSIMIC","cSIMIC-BF"],
+        frameon=True, 
+        edgecolor='black',loc="lower right",
+        columnspacing=1.5,prop={"size":10})
+ax6.set_title("Total bacteria",size=16)
+ax6.set_ylabel("Bacterial abundance (copies/mL)",size=14)
+ax6.set_xlabel("Time (h)", size=14)
+ax6.annotate(
+        "G", xy=(0, 1), xycoords='axes fraction',xytext=(+0.5, -0.5), textcoords='offset fontsize',
+        fontsize=16, verticalalignment='top',weight="bold")
+plt.savefig("supp_figure 1.png",dpi=600,bbox_inches='tight')
+plt.show()
+
+
+########
+##Suppl. Figure 2
+################
+#input file:
+#total_berraandcosine: df with the canberra and cosine distance based on bacterial abundance
+
+
+fig, axes = plt.subplots(2, 1,figsize=(10,15))
+palette=sns.color_palette("bright")
+sns.boxplot(data=total_berraandcosine,ax=axes[0])
+g=sns.barplot(data=singlephase_berraandcosine_repli_bac,x="Phase",y="Distance",hue="Distance_matrix",ax=axes[1])
+for l in range(2):
+    axes[l].set_ylim(0,1)
+    axes[l].set_ylabel("Distance",size=14)   
+#sns.swarmplot(data=singlephase_berraandcosine,x= 'phase', y='value',hue="distance_matrix",ax=axes[1],dodge=True)
+axes[1].set_xlabel("Phase",size=14)
+label=["A","B"] #for subplot annotation
+label_index=0
+for j in range(2):
+    axes[j].annotate(
+        label[label_index],
+        xy=(0, 1), xycoords='axes fraction',
+        xytext=(+0.5, -0.5), textcoords='offset fontsize',
+        fontsize=14, verticalalignment='top', fontfamily='serif',weight="bold")
+    label_index+=1
+plt.savefig("newfigsupplementary.png",dpi=600)
+
