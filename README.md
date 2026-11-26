@@ -3,5 +3,7 @@ The group of Functional Microbe Technology investigates traits of single microbe
 
 We are fascinated by the functional diversity of microbes, and by trophic – nutrition related - interactions in different ecosystems. We investigate the mechanisms of microbial functions, and test how microbial activities can be exploited and manipulated.
 
-Contacts: Professor Clarissa Schwab schwab@bce.au.dk<img width="389" height="389" alt="FMT logo" src="https://github.com/user-attachments/assets/1833e6b2-c76c-4131-b558-b2f470b82f81" />
+<img width="389" height="389" alt="FMT logo" src="https://github.com/user-attachments/assets/1833e6b2-c76c-4131-b558-b2f470b82f81" />
+
+Contacts: Professor Clarissa Schwab schwab@bce.au.dk
 
